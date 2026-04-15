@@ -35,21 +35,21 @@ class AppError extends Error {
 
 app.post("/api/profiles",
  (req: Request, _res: Response, next: NextFunction) => {
-  if (!req.query || req.query.name === undefined) {
+  if (!req.body || req.body.name === undefined) {
    return _res.status(400).json({
     status: "error",
-    message: "'name' is required in request query"
+    message: "'name' is required in request body"
    });
   }
 
-  if (req.query.name === "") {
+  if (req.body.name === "") {
    return _res.status(400).json({
     status: "error",
     message: "'name' cannot be empty"
    });
   }
 
-  if (isNaN(Number(req.query.name)) === false) {
+  if (isNaN(Number(req.body.name)) === false) {
    return _res.status(422).json({
     status: "error",
     message: "'name' must not be a number"
@@ -57,11 +57,11 @@ app.post("/api/profiles",
   }
   next()
  },
- async (req: Request<{}, {}, {}, { name: string }>, res: Response<SuccessResponse | ErrorResponse>) => {
+ async (req: Request<{}, {}, { name: string }, {}>, res: Response<SuccessResponse | ErrorResponse>) => {
   const [genderRes, agifyRes, nationalizeRes]: [AxiosResponse<GenderizeResponse>, AxiosResponse<AgifyResponse>, AxiosResponse<NationalizeResponse>] = await Promise.all([
-   axios.get(`https://api.genderize.io/?name=${req.query.name}`),
-   axios.get(`https://api.agify.io/?name=${req.query.name}`),
-   axios.get(`https://api.nationalize.io/?name=${req.query.name}`),
+   axios.get(`https://api.genderize.io/?name=${req.body.name}`),
+   axios.get(`https://api.agify.io/?name=${req.body.name}`),
+   axios.get(`https://api.nationalize.io/?name=${req.body.name}`),
   ])
 
   if (genderRes.status !== 200 || agifyRes.status !== 200 || nationalizeRes.status !== 200) throw new AppError({
@@ -70,7 +70,7 @@ app.post("/api/profiles",
   });
 
   let existingUser = await db.selectFrom('profile')
-   .where((eb) => eb(sql`LOWER(TRIM(name))`, "=", req.query.name.toLowerCase().trim()))
+   .where((eb) => eb(sql`LOWER(TRIM(name))`, "=", req.body.name.toLowerCase().trim()))
    .selectAll()
    .executeTakeFirst();
 
@@ -78,7 +78,7 @@ app.post("/api/profiles",
 
   if (existingUser) {
    return res.status(409).json({
-    message: "Profile already exists",
+    message: "Profile already exists", 
     data: existingUser,
     status: 'success'
    })
@@ -103,7 +103,7 @@ app.post("/api/profiles",
    country_probability: Math.max(...nationalizeRes.data.country.map((c,) => c.probability)),
    gender: genderRes.data.gender,
    gender_probability: genderRes.data.probability,
-   name: req.query.name,
+   name: req.body.name,
    sample_size: genderRes.data.count
   })
    .returningAll()
