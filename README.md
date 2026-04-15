@@ -1,8 +1,8 @@
 # HNG i14 Stage 0 Backend Task
 
-A simple Express API that integrates with the Genderize API to classify a name and return gender predictions with processed metadata.
+A simple Express API that enriches a name using external prediction services (Genderize, Agify, Nationalize), processes the results, and stores structured profile data in a database.
 
-The service validates input, fetches data from an external API, transforms the response, and returns a structured JSON output with confidence scoring and timestamp metadata.
+The service validates input, fetches data from multiple APIs in parallel, derives additional metadata like age group and country probability, and returns a normalized JSON response. It also supports deduplication using case-insensitive name matching.
 
 ---
 
@@ -14,10 +14,16 @@ Install dependencies:
 pnpm install
 ```
 
-Run the development server:
+Run development server:
 
 ```bash
 pnpm run dev
+```
+
+Start production server:
+
+```bash
+pnpm run start
 ```
 
 The API will be available at:
@@ -30,55 +36,109 @@ http://localhost:3000
 
 ## API endpoint
 
-### GET `/api/classify`
+### POST `/api/profiles`
 
-Classifies a name using the Genderize API and returns processed results.
+Creates or retrieves a profile based on a given name.
+The service fetches predictions from external APIs and stores a normalized profile in the database.
 
-### Query parameters
+---
 
-| Parameter | Type   | Required | Description      |
-| --------- | ------ | -------- | ---------------- |
-| name      | string | yes      | Name to classify |
+### Request body
+
+| Field | Type   | Required | Description      |
+| ----- | ------ | -------- | ---------------- |
+| name  | string | yes      | Name to classify |
+
+---
+
+### Validation rules
+
+* `name` is required
+* `name` cannot be empty
+* `name` must not be numeric
 
 ---
 
 ### Example request
 
-```
-GET /api/classify?name=alex
+```http
+POST /api/profiles
+Content-Type: application/json
+
+{
+  "name": "alex"
+}
 ```
 
 ---
 
-### Success response
+## Success responses
+
+### 200 OK (new profile created)
 
 ```json
 {
   "status": "success",
   "data": {
+    "id": 1,
     "name": "alex",
     "gender": "male",
-    "probability": 0.99,
-    "sample_size": 1234,
-    "is_confident": true,
-    "processed_at": "2026-04-10T12:00:00.000Z"
+    "gender_probability": 0.99,
+    "age": 28,
+    "age_group": "adult",
+    "country_id": "US",
+    "country_probability": 0.87,
+    "sample_size": 1234
   }
 }
 ```
+
 ---
 
-### Error responses
+### 409 Conflict (profile already exists)
 
-#### Missing or invalid input
+```json
+{
+  "status": "success",
+  "message": "Profile already exists",
+  "data": {
+    "id": 1,
+    "name": "alex",
+    "gender": "male",
+    "age": 28,
+    "age_group": "adult",
+    "country_id": "US",
+    "country_probability": 0.87,
+    "sample_size": 1234
+  }
+}
+```
+
+---
+
+## Error responses
+
+### 400 Bad Request
 
 ```json
 {
   "status": "error",
-  "message": "'name' is required as a query parameter"
+  "message": "'name' is required in request body"
 }
 ```
 
-#### No prediction found
+---
+
+### 422 Unprocessable Entity
+
+```json
+{
+  "status": "error",
+  "message": "'name' must not be a number"
+}
+```
+
+or
 
 ```json
 {
@@ -87,7 +147,22 @@ GET /api/classify?name=alex
 }
 ```
 
-#### Server error
+---
+
+### 502 Bad Gateway
+
+Returned when any external API fails.
+
+```json
+{
+  "status": "error",
+  "message": "Error calling Genderize API"
+}
+```
+
+---
+
+### 500 Internal Server Error
 
 ```json
 {
@@ -100,14 +175,15 @@ GET /api/classify?name=alex
 
 ## Features
 
-* TypeScript for type safety
-* Express for API routing
-* External API integration (Genderize)
-* Input validation with strict error handling
-* Confidence scoring logic
-* CORS enabled for cross-origin access
-* Structured JSON responses
-* Timestamped processing metadata
+* Express REST API with TypeScript
+* Parallel external API calls (Genderize, Agify, Nationalize)
+* Database persistence with deduplication (case-insensitive name match)
+* Age group classification (child, teenager, adult, senior)
+* Country probability extraction (highest probability selection)
+* Input validation middleware
+* Centralized error handling
+* CORS support
+* Structured and consistent JSON responses
 
 ---
 
@@ -117,7 +193,7 @@ GET /api/classify?name=alex
 hng-i14-task-0-david-uzondu/
 ├── apps/
 │   └── server/        # Express backend API
-├── packages/          # Shared packages (types, env, etc.)
+├── packages/          # Shared packages (types, env, db, etc.)
 ```
 
 ---
@@ -128,3 +204,14 @@ hng-i14-task-0-david-uzondu/
 * `pnpm run start` – Start production server
 * `pnpm run build` – Build the application
 * `pnpm run check` – Lint and format code
+
+---
+
+## Environment variables
+
+```env
+CORS_ORIGIN=*
+NODE_ENV=development
+PORT=3000
+DATABASE_URL=your_database_url_here
+```
