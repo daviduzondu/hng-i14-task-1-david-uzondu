@@ -23,10 +23,12 @@ export interface NationalizeResponse {
  }[]
 }
 
+export type SuccessData = Omit<Updateable<profile>, 'updated_at'> | Omit<Updateable<profile>, 'updated_at'>[]
 export interface SuccessResponse {
  status: 'success';
  message?: string;
- data: Omit<Updateable<profile>, 'updated_at'>
+ count?: number,
+ data: SuccessData
 }
 
 export interface ErrorResponse {

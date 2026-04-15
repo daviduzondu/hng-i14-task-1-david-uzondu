@@ -1,10 +1,11 @@
 import { db } from "@/db/db";
-import type { AgeGroup, DB } from "@/db/generated/types";
+import type { AgeGroup, DB, Gender } from "@/db/generated/types";
 import type { AgifyResponse, ErrorResponse, GenderizeResponse, NationalizeResponse, SuccessResponse } from "@/types";
 import { env } from "@hng-i14-task-0-david-uzondu/env/server";
 import axios, { Axios, type AxiosResponse } from "axios";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
+import { StatusCodes } from "http-status-codes";
 import { sql, type ValueExpression } from "kysely";
 
 const app = express();
@@ -65,7 +66,7 @@ app.post("/api/profiles",
   ])
 
   if (genderRes.status !== 200 || agifyRes.status !== 200 || nationalizeRes.status !== 200) throw new AppError({
-   message: `Error calling ${genderRes.status !== 200 ? "Genderize" : agifyRes.status !== 200 ? "Agify" : nationalizeRes.status !== 200 ? "Nationalize" : "classification"} API`,
+   message: `${genderRes.status !== 200 ? "Genderize" : agifyRes.status !== 200 ? "Agify" : nationalizeRes.status !== 200 ? "Nationalize" : "classification"} returned an invalide response`,
    code: 502
   });
 
@@ -77,8 +78,8 @@ app.post("/api/profiles",
   delete existingUser?.updated_at;
 
   if (existingUser) {
-   return res.status(409).json({
-    message: "Profile already exists", 
+   return res.status(200).json({
+    message: "Profile already exists",
     data: existingUser,
     status: 'success'
    })
@@ -112,12 +113,55 @@ app.post("/api/profiles",
   delete newProfile.updated_at;
 
 
-  return res.status(200)
+  return res.status(StatusCodes.CREATED)
    .json({
     status: 'success',
     data: newProfile
    });
  });
+
+app.get('/api/profiles/:id', async (req: Request<{ id?: string }, {}, {}, {}>, res: Response<SuccessResponse | ErrorResponse>, next) => {
+ const id = req.params.id;
+ const result = await db.selectFrom('profile').where('id', '=', id).selectAll().executeTakeFirstOrThrow(() => {
+  throw new AppError({ message: 'Failed to get profile', code: StatusCodes.NOT_FOUND });
+ });
+ delete result.updated_at;
+ return res.status(StatusCodes.OK).json({
+  data: result,
+  status: 'success',
+ })
+});
+
+app.get('/api/profiles/', async (req: Request<{}, {}, {}, { gender: Gender, country_id: string, age_group: string }>, res: Response<SuccessResponse | ErrorResponse>, next) => {
+ const { gender, country_id, age_group } = req.query;
+
+ const result = await db.selectFrom('profile')
+  .$if(!!gender, (qb) => qb.where((eb) => eb(sql`LOWER(gender::text)`, "=", gender.toLowerCase().trim())))
+  .$if(!!country_id, (qb) => qb.where((eb) => eb(sql`LOWER(country_id::text)`, "=", country_id.toLowerCase().trim())))
+  .$if(!!age_group, (qb) => qb.where((eb) => eb(sql`LOWER(age_group::text)`, "=", age_group.toLowerCase().trim())))
+  .selectAll()
+  .execute()
+
+ return res.status(StatusCodes.OK).json({
+  count: result.length,
+  data: result.map(r => ({
+   age: r.age,
+   age_group: r.age_group,
+   country_id: r.country_id,
+   id: r.id,
+   name: r.name,
+   gender: r.gender,
+  })),
+  status: 'success'
+ })
+});
+
+app.delete('/api/profiles/:id', (req: Request<{ id: string }>, res, next) => {
+ db.deleteFrom('profile').where('id', '=', req.params.id).returning(['id']).executeTakeFirstOrThrow(() => {
+  throw new AppError({ message: "Failed to delete profile with ID", code: StatusCodes.NOT_FOUND })
+ })
+ return res.status(StatusCodes.NO_CONTENT).json();
+})
 
 
 app.use((err: Error, _req: Request, res: Response<ErrorResponse>, _next: NextFunction) => {

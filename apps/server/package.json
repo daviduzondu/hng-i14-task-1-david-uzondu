@@ -15,6 +15,7 @@
     "cors": "^2.8.5",
     "dotenv": "catalog:",
     "express": "^5.1.0",
+    "http-status-codes": "^2.3.0",
     "kysely": "^0.28.16",
     "pg": "^8.20.0",
     "prisma": "^7.7.0",
