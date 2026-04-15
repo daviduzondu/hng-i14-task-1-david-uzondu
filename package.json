@@ -1,0 +1,29 @@
+{
+  "name": "hng-i14-task-0-david-uzondu",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "check": "biome check --write .",
+    "build": "pnpm --filter server build",
+    "check-types": "pnpm -r check-types",
+    "dev": "pnpm --filter server dev",
+    "start": "pnpm --filter server start",
+    "migrate:dev": "pnpm -F server exec pnpm dlx prisma migrate dev"
+  },
+  "dependencies": {
+    "@hng-i14-task-0-david-uzondu/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@hng-i14-task-0-david-uzondu/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@10.33.0"
+}
