@@ -78,6 +78,9 @@ importers:
       prisma-kysely:
         specifier: ^3.1.0
         version: 3.1.0(prisma@7.7.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3))
+      uuid:
+        specifier: ^14.0.0
+        version: 14.0.0
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -1763,6 +1766,10 @@ packages:
       synckit:
         optional: true
 
+  uuid@14.0.0:
+    resolution: {integrity: sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==}
+    hasBin: true
+
   valibot@1.2.0:
     resolution: {integrity: sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg==}
     peerDependencies:
@@ -3324,6 +3331,8 @@ snapshots:
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
+
+  uuid@14.0.0: {}
 
   valibot@1.2.0(typescript@5.9.3):
     optionalDependencies:

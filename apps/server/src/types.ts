@@ -26,6 +26,7 @@ export interface NationalizeResponse {
 export type SuccessData = Omit<Updateable<profile>, 'updated_at'> | Omit<Updateable<profile>, 'updated_at'>[]
 export interface SuccessResponse {
  status: 'success';
+ total?: number;
  message?: string;
  count?: number,
  data: SuccessData

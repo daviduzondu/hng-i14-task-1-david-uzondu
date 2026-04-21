@@ -9,15 +9,15 @@ datasource db {
 }
 
 model profile {
- id                  String   @id @default(dbgenerated("gen_random_uuid()"))
+ id                  String   @id @unique @default(dbgenerated("gen_random_uuid()"))
  name                String
  gender              Gender
  gender_probability  Float
- sample_size         Float
  age                 Int
  age_group           AgeGroup
  country_id          String
  country_probability Float
+ country_name        String
  created_at          DateTime @default(now()) @db.Timestamptz()
  updated_at          DateTime @default(now()) @db.Timestamptz()
 }

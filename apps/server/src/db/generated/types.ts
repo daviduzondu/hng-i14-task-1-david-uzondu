@@ -19,13 +19,13 @@ export type AgeGroup = (typeof AgeGroup)[keyof typeof AgeGroup];
 export type profile = {
     id: Generated<string>;
     name: string;
-    gender: Gender | null;
+    gender: Gender;
     gender_probability: number;
-    sample_size: number;
     age: number;
     age_group: AgeGroup;
     country_id: string;
     country_probability: number;
+    country_name: string;
     created_at: Generated<Timestamp>;
     updated_at: Generated<Timestamp>;
 };
